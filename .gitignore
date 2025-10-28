@@ -1,0 +1,68 @@
+# ========================
+# Node & general ignores
+# ========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+.env
+.env.*
+.DS_Store
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+*.bak
+
+# ========================
+# Build outputs
+# ========================
+dist/
+build/
+.next/
+out/
+coverage/
+.cache/
+.temp/
+tmp/
+backend/temp/
+backend/backend.log
+lalon-shop-frontend/frontend.log
+
+# ========================
+# Editor / OS files
+# ========================
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+*.sublime-workspace
+*.sublime-project
+
+# ========================
+# Uploads / media (optional)
+# Uncomment if you don’t want to push media files
+# ========================
+# backend/media/
+# banner/
+# uploads/
+
+# ========================
+# Shell scripts & local configs
+# ========================
+*.sh
+!start-lalon.sh
+!stop-lalon.sh
+!status-lalon.sh
+
+# ========================
+# Misc
+# ========================
+*.zip
+*.tar
+*.tar.gz
+*.bak
+*.tmp
