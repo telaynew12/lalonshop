@@ -1,5 +1,6 @@
 const getMedia = (path) => {
-    return `${process.env.NEXT_PUBLIC_API_URL}/media?name=${path}`
+    // Always use the domain URL for consistency
+    return `https://www.lalonshopbd.com/api/v1/media?name=${path}`
 }
 
 export default getMedia

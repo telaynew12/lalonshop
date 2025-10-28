@@ -52,7 +52,7 @@ fi
 # Start Backend
 echo ""
 echo "2. Starting Backend Server (Port 2004)..."
-cd "/root/lalon/lalon source code/backend"
+cd "/root/lalon/lalonbf/backend"
 nohup npm start > backend.log 2>&1 &
 BACKEND_PID=$!
 echo "Backend started with PID: $BACKEND_PID"
@@ -71,7 +71,7 @@ fi
 # Start Frontend
 echo ""
 echo "3. Starting Frontend Server (Port 2008)..."
-cd "/root/lalon/lalon source code/lalon-shop-frontend"
+cd "/root/lalon/lalonbf/lalon-shop-frontend"
 nohup npm start > frontend.log 2>&1 &
 FRONTEND_PID=$!
 echo "Frontend started with PID: $FRONTEND_PID"
@@ -108,6 +108,6 @@ echo "  Domain Frontend: https://www.lalonshopbd.com/"
 echo "  Backend API: http://88.222.245.41:2004/api/v1/"
 echo ""
 echo "Logs:"
-echo "  Backend: /root/lalon/lalon source code/backend/backend.log"
-echo "  Frontend: /root/lalon/lalon source code/lalon-shop-frontend/frontend.log"
+echo "  Backend: /root/lalon/lalonbf/backend/backend.log"
+echo "  Frontend: /root/lalon/lalonbf/lalon-shop-frontend/frontend.log"
 

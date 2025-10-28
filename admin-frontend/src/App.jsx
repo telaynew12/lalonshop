@@ -33,11 +33,24 @@ import LadingPage from "./pages/LadingPage/LadingPage";
 import CreateLandingPage from "./pages/CreateLandingPage/CreateLandingPage";
 import Summery from "./pages/Summery/Summery";
 
-// export const BACKEND_URL = import.meta.env.MODE === 'development' ? 'http://localhost:3013' : 'https://galiver-backend.onrender.com'
-export const BACKEND_URL =
-  import.meta.env.MODE === "development"
-    ? "https://www.xyz.lalonshopbd.com"
-    : "https://www.xyz.lalonshopbd.com";
+// Function to get the correct backend URL based on environment
+const getBackendUrl = () => {
+  // If running on client-side, use the current hostname
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'www.lalonshopbd.com' || hostname === 'lalonshopbd.com') {
+      return 'https://www.lalonshopbd.com/api/v1';
+    }
+    if (hostname === 'admin.lalonshopbd.com' || hostname === 'www.admin.lalonshopbd.com') {
+      return 'https://www.lalonshopbd.com/api/v1';
+    }
+  }
+
+  // For local development or direct IP access
+  return 'http://88.222.245.41:2004/api/v1';
+};
+
+export const BACKEND_URL = getBackendUrl().replace('/api/v1', '');
 
 const App = () => {
   //socket connection
