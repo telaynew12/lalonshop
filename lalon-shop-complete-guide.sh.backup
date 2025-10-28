@@ -1,0 +1,1361 @@
+#!/bin/bash
+
+# ====================================================================================
+# LALON SHOP BD - COMPLETE SYSTEM GUIDE & MANAGEMENT SCRIPT
+# ====================================================================================
+# Author: Lalon Shop BD Team
+# Version: 2.0
+# Description: Complete guide and management script for Lalon Shop e-commerce platform
+# Components: Backend API, Shop Frontend, Admin Panel, Nginx Proxy, SSL
+# ====================================================================================
+
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+WHITE='\033[1;37m'
+NC='\033[0m' # No Color
+
+# Configuration variables
+PROJECT_ROOT="/root/lalon/lalonbf"
+BACKEND_DIR="$PROJECT_ROOT/backend"
+FRONTEND_DIR="$PROJECT_ROOT/lalon-shop-frontend"
+ADMIN_DIR="$PROJECT_ROOT/admin-frontend"
+BANNER_DIR="$PROJECT_ROOT/banner"
+
+BACKEND_PORT=2004
+FRONTEND_PORT=2008
+SERVER_IP="88.222.245.41"
+DOMAIN="www.lalonshopbd.com"
+ADMIN_DOMAIN="www.admin.lalonshopbd.com"
+
+# ====================================================================================
+# SYSTEM OVERVIEW & ARCHITECTURE
+# ====================================================================================
+
+show_overview() {
+    echo -e "${CYAN}================================================================================${NC}"
+    echo -e "${CYAN}                    LALON SHOP BD - SYSTEM OVERVIEW${NC}"
+    echo -e "${CYAN}================================================================================${NC}"
+    echo ""
+    echo -e "${WHITE}ARCHITECTURE:${NC}"
+    echo -e "  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐"
+    echo -e "  │   Nginx Proxy   │    │   Next.js Shop  │    │   React Admin   │"
+    echo -e "  │   (SSL/HTTPS)   │◄──►│   Frontend      │    │   Frontend      │"
+    echo -e "  │   Port: 80/443  │    │   Port: 2008    │    │   (Static)      │"
+    echo -e "  └─────────────────┘    └─────────────────┘    └─────────────────┘"
+    echo -e "          │                        │"
+    echo -e "          └────────────────────────┼────────────────────────────────┐"
+    echo -e "                                   ▼                                │"
+    echo -e "                         ┌─────────────────┐    ┌─────────────────┐ │"
+    echo -e "                         │  Node.js API    │    │   MongoDB       │ │"
+    echo -e "                         │   Backend       │◄──►│   Database      │ │"
+    echo -e "                         │   Port: 2004    │    │   Port: 27017   │ │"
+    echo -e "                         └─────────────────┘    └─────────────────┘ │"
+    echo -e "                                   │                                │"
+    echo -e "                                   └────────────────────────────────┘"
+    echo ""
+    echo -e "${WHITE}SERVICES:${NC}"
+    echo -e "  • ${GREEN}Backend API${NC} (Node.js/Express) - Product management, orders, payments"
+    echo -e "  • ${GREEN}Shop Frontend${NC} (Next.js) - Customer-facing e-commerce site"
+    echo -e "  • ${GREEN}Admin Panel${NC} (React/Vite) - Admin dashboard for management"
+    echo -e "  • ${GREEN}Nginx Proxy${NC} - SSL termination, domain routing, static file serving"
+    echo -e "  • ${GREEN}MongoDB${NC} - Database for products, users, orders"
+    echo -e "  • ${GREEN}SSL Certificates${NC} - Let's Encrypt for HTTPS"
+    echo ""
+}
+
+# ====================================================================================
+# HOW THE SYSTEM WORKS - SOURCE CODE DEEP DIVE
+# ====================================================================================
+
+show_how_it_works() {
+    echo -e "${CYAN}================================================================================${NC}"
+    echo -e "${CYAN}                  HOW THE LALON SHOP SYSTEM WORKS (SOURCE CODE)${NC}"
+    echo -e "${CYAN}================================================================================${NC}"
+    echo ""
+
+    echo -e "${WHITE}🚀 1. FRONTEND SHOP (Next.js - Port 2008):${NC}"
+    echo -e "${YELLOW}Location:${NC} /root/lalon/lalonbf/lalon-shop-frontend/"
+    echo -e "${YELLOW}Technology:${NC} Next.js 15.1.3 + React 19 + Tailwind CSS"
+    echo ""
+    echo -e "${GREEN}How it works:${NC}"
+    echo -e "   ├── 📁 src/app/(home-layout)/page.js"
+    echo -e "   │   └── Uses <Suspense> for client-side loading"
+    echo -e "   │       Calls PageContent component"
+    echo -e "   ├── 📁 src/app/(home-layout)/PageContent.js"
+    echo -e "   │   ├── Uses useSearchProductQuery (RTK Query)"
+    echo -e "   │   ├── Fetches products with pagination & filters"
+    echo -e "   │   └── Renders ProductCard components"
+    echo -e "   ├── 📁 src/components/ProductCard/ProductCard.js"
+    echo -e "   │   ├── Receives product data as props"
+    echo -e "   │   ├── Uses getMedia(path) for image URLs"
+    echo -e "   │   └── Links to individual product pages"
+    echo -e "   └── 📁 src/redux/api/query.js"
+    echo -e "       ├── getBaseUrl() detects environment"
+    echo -e "       ├── Domain: https://www.lalonshopbd.com/api/v1"
+    echo -e "       └── Direct IP: http://88.222.245.41:2004/api/v1"
+    echo ""
+
+    echo -e "${WHITE}🔧 2. BACKEND API (Node.js - Port 2004):${NC}"
+    echo -e "${YELLOW}Location:${NC} /root/lalon/lalonbf/backend/"
+    echo -e "${YELLOW}Technology:${NC} Node.js + Express.js + MongoDB"
+    echo ""
+    echo -e "${GREEN}How it works:${NC}"
+    echo -e "   ├── 📁 index.js (Main Entry Point)"
+    echo -e "   │   ├── Configures CORS for allowed domains"
+    echo -e "   │   ├── Sets up middleware (express.json, cookies, fileUpload)"
+    echo -e "   │   └── Routes to /api/v1/* endpoints"
+    echo -e "   ├── 📁 router/v1_route/v1_route.js"
+    echo -e "   │   ├── /api/v1/product -> product routes"
+    echo -e "   │   ├── /api/v1/media -> media serving"
+    echo -e "   │   └── /api/v1/category -> category routes"
+    echo -e "   ├── 📁 controller/productController.js"
+    echo -e "   │   ├── searchProducts() - MongoDB aggregation pipeline"
+    echo -e "   │   │   ├── $match: active products + search filters"
+    echo -e "   │   │   ├── $facet: data + totalCount"
+    echo -e "   │   │   └── $unwind: expands media array"
+    echo -e "   │   └── Image URLs: \${BACKEND_URL}/api/v1/media?name=\${filename}"
+    echo -e "   └── 📁 router/v1_route/media.js"
+    echo -e "       ├── GET /api/v1/media?name=filename"
+    echo -e "       ├── Serves files from /root/lalon/lalonbf/backend/media/"
+    echo -e "       └── Uses fs.createReadStream() for efficient streaming"
+    echo ""
+
+    echo -e "${WHITE}🗄️  3. DATABASE (MongoDB - Port 27017):${NC}"
+    echo -e "${YELLOW}Technology:${NC} MongoDB with Mongoose ODM"
+    echo ""
+    echo -e "${GREEN}How it works:${NC}"
+    echo -e "   ├── 📁 model/productModel.js"
+    echo -e "   │   ├── Schema: title, price, discount, media[]"
+    echo -e "   │   ├── media: [{ name: String, path: String }]"
+    echo -e "   │   └── status: 'active'/'inactive'"
+    echo -e "   ├── 📁 model/categoryModel.js"
+    echo -e "   │   ├── Hierarchical categories (cat/subcat/subsubcat)"
+    echo -e "   │   └── Image fields for each level"
+    echo -e "   └── 📁 model/userModel.js & orderModel.js"
+    echo -e "       ├── User authentication & profiles"
+    echo -e "       └── Order tracking with product references"
+    echo ""
+
+    echo -e "${WHITE}🌐 4. DEPLOYMENT & PROXY (Nginx):${NC}"
+    echo -e "${YELLOW}Configuration:${NC} /etc/nginx/sites-enabled/"
+    echo ""
+    echo -e "${GREEN}How it works:${NC}"
+    echo -e "   ├── 📁 lalonshopbd.com.conf"
+    echo -e "   │   ├── HTTPS on port 443 with SSL certificates"
+    echo -e "   │   ├── location / { proxy_pass http://localhost:2008 }"
+    echo -e "   │   └── location /api/ { proxy_pass http://localhost:2004 }"
+    echo -e "   ├── 📁 admin.lalonshopbd.com.conf"
+    echo -e "   │   ├── Serves static React build files"
+    echo -e "   │   └── root /root/lalon/lalonbf/admin-frontend/dist"
+    echo -e "   └── 📁 SSL Certificates"
+    echo -e "       ├── /etc/letsencrypt/live/lalonshopbd.com/"
+    echo -e "       └── Auto-renewed by certbot"
+    echo ""
+
+    echo -e "${WHITE}🔄 5. COMPLETE DATA FLOW EXAMPLE:${NC}"
+    echo ""
+    echo -e "${CYAN}USER VISITS SHOP:${NC}"
+    echo -e "   1. User: https://www.lalonshopbd.com"
+    echo -e "   2. Nginx: Receives HTTPS → proxies to localhost:2008"
+    echo -e "   3. Next.js: Renders page → calls useSearchProductQuery()"
+    echo -e "   4. RTK Query: Makes request to /api/v1/product/search"
+    echo -e "   5. Nginx: Intercepts /api/* → proxies to localhost:2004"
+    echo -e "   6. Express: searchProducts() function executes"
+    echo -e "   7. MongoDB: Aggregation pipeline runs on 'products' collection"
+    echo -e "   8. Backend: Returns JSON with image URLs pointing to domain"
+    echo -e "   9. Frontend: getMedia() creates https://domain.com/api/v1/media?name=file.jpg"
+    echo -e "   10. Nginx: Routes media requests to backend:2004"
+    echo -e "   11. Backend: Serves image from /media/ directory"
+    echo ""
+    echo -e "${CYAN}ADMIN MANAGEMENT:${NC}"
+    echo -e "   1. Admin: https://admin.lalonshopbd.com"
+    echo -e "   2. Nginx: Serves static React files from /admin-frontend/dist/"
+    echo -e "   3. Admin Panel: Loads → makes API calls to same backend"
+    echo -e "   4. Same API flow as shop, but with admin authentication"
+    echo ""
+
+    echo -e "${WHITE}🔧 6. DEVELOPMENT VS PRODUCTION:${NC}"
+    echo ""
+    echo -e "${GREEN}Development (Local):${NC}"
+    echo -e "   • Frontend: npm run dev (hot reload)"
+    echo -e "   • Backend: npm start (with nodemon)"
+    echo -e "   • Database: Local MongoDB instance"
+    echo -e "   • Access: http://localhost:3000 (frontend)"
+    echo ""
+    echo -e "${GREEN}Production (Server):${NC}"
+    echo -e "   • Frontend: npm start (Next.js production build)"
+    echo -e "   • Backend: npm start (Node.js server)"
+    echo -e "   • Database: MongoDB on same server"
+    echo -e "   • Access: https://domain.com (via Nginx)"
+    echo ""
+
+    echo -e "${WHITE}📁 7. KEY FILES TO UNDERSTAND:${NC}"
+    echo ""
+    echo -e "${YELLOW}Frontend Core:${NC}"
+    echo -e "   • src/redux/api/query.js          - API communication"
+    echo -e "   • src/utils/getMedia.js           - Image URL generation"
+    echo -e "   • src/app/layout.js               - App structure & SEO"
+    echo -e "   • src/components/ProductCard/     - Product display"
+    echo ""
+    echo -e "${YELLOW}Backend Core:${NC}"
+    echo -e "   • index.js                        - Server entry point"
+    echo -e "   • controller/productController.js - Product logic"
+    echo -e "   • router/v1_route/media.js        - File serving"
+    echo -e "   • model/productModel.js           - Data schemas"
+    echo ""
+    echo -e "${YELLOW}Configuration:${NC}"
+    echo -e "   • backend/.env                    - Environment variables"
+    echo -e "   • nginx/sites-enabled/*.conf      - Web server config"
+    echo -e "   • package.json files              - Dependencies"
+    echo ""
+}
+
+# ====================================================================================
+# SERVICE STATUS CHECKING
+# ====================================================================================
+
+check_service_status() {
+    echo -e "${CYAN}================================================================================${NC}"
+    echo -e "${CYAN}                           SERVICE STATUS CHECK${NC}"
+    echo -e "${CYAN}================================================================================${NC}"
+    echo "Checked at: $(date)"
+    echo ""
+
+    # Check backend
+    echo -e "${WHITE}1. Backend Service (Port $BACKEND_PORT):${NC}"
+    if netstat -tlnp 2>/dev/null | grep -q ":$BACKEND_PORT "; then
+        BACKEND_PID=$(netstat -tlnp | grep ":$BACKEND_PORT " | awk '{print $7}' | cut -d'/' -f1)
+        echo -e "   ${GREEN}✅ RUNNING${NC} - PID: $BACKEND_PID"
+
+        # Test API
+        if curl -s --max-time 5 "http://localhost:$BACKEND_PORT/api/v1/product/search?take=1&page=1" | grep -q "products"; then
+            echo -e "   ${GREEN}✅ API Responding${NC}"
+        else
+            echo -e "   ${RED}❌ API Not Responding${NC}"
+        fi
+    else
+        echo -e "   ${RED}❌ NOT RUNNING${NC}"
+    fi
+    echo ""
+
+    # Check frontend
+    echo -e "${WHITE}2. Frontend Service (Port $FRONTEND_PORT):${NC}"
+    if netstat -tlnp 2>/dev/null | grep -q ":$FRONTEND_PORT "; then
+        FRONTEND_PID=$(netstat -tlnp | grep ":$FRONTEND_PORT " | awk '{print $7}' | cut -d'/' -f1)
+        echo -e "   ${GREEN}✅ RUNNING${NC} - PID: $FRONTEND_PID"
+    else
+        echo -e "   ${RED}❌ NOT RUNNING${NC}"
+    fi
+    echo ""
+
+    # Check external access
+    echo -e "${WHITE}3. External Access:${NC}"
+    if curl -s --max-time 10 "https://$DOMAIN/" >/dev/null 2>&1; then
+        echo -e "   ${GREEN}✅ Domain ($DOMAIN) - ACCESSIBLE${NC}"
+    else
+        echo -e "   ${RED}❌ Domain ($DOMAIN) - NOT ACCESSIBLE${NC}"
+    fi
+
+    if curl -s --max-time 10 "http://$SERVER_IP:$FRONTEND_PORT/" >/dev/null 2>&1; then
+        echo -e "   ${GREEN}✅ Direct IP ($SERVER_IP:$FRONTEND_PORT) - ACCESSIBLE${NC}"
+    else
+        echo -e "   ${RED}❌ Direct IP ($SERVER_IP:$FRONTEND_PORT) - NOT ACCESSIBLE${NC}"
+    fi
+    echo ""
+
+    # Check system resources
+    echo -e "${WHITE}4. System Resources:${NC}"
+    echo -e "   💾 $(df -h / | tail -1 | awk '{print "Disk:", $5, "used (" $3 "/" $2 ")"}')"
+    echo -e "   🧠 $(free -h | grep Mem | awk '{print "Memory:", $3 "/" $2}')"
+    echo ""
+
+    # Show recent logs
+    echo -e "${WHITE}5. Recent Backend Logs:${NC}"
+    if [ -f "$BACKEND_DIR/backend.log" ]; then
+        tail -3 "$BACKEND_DIR/backend.log" | sed 's/^/   /'
+    else
+        echo -e "   ${YELLOW}⚠️  No backend log file found${NC}"
+    fi
+    echo ""
+
+    echo -e "${WHITE}6. Recent Frontend Logs:${NC}"
+    if [ -f "$FRONTEND_DIR/frontend.log" ]; then
+        tail -3 "$FRONTEND_DIR/frontend.log" | sed 's/^/   /'
+    else
+        echo -e "   ${YELLOW}⚠️  No frontend log file found${NC}"
+    fi
+    echo ""
+}
+
+# ====================================================================================
+# INDIVIDUAL SERVICE MANAGEMENT
+# ====================================================================================
+
+# Function to check if port is in use
+check_port() {
+    local port=$1
+    if netstat -tlnp 2>/dev/null | grep -q ":$port "; then
+        echo "❌ Port $port is already in use"
+        return 1
+    else
+        echo "✅ Port $port is available"
+        return 0
+    fi
+}
+
+# Function to kill processes on specific ports
+kill_port() {
+    local port=$1
+    local pids=$(netstat -tlnp 2>/dev/null | grep ":$port " | awk '{print $7}' | cut -d'/' -f1)
+    if [ ! -z "$pids" ]; then
+        echo "🔄 Killing processes on port $port: $pids"
+        kill -9 $pids 2>/dev/null || true
+        sleep 2
+    fi
+}
+
+# Start Backend Service
+start_backend() {
+    echo -e "${CYAN}Starting Backend Service...${NC}"
+
+    # Check if port is available
+    if ! check_port $BACKEND_PORT; then
+        kill_port $BACKEND_PORT
+        sleep 3
+        if ! check_port $BACKEND_PORT; then
+            echo -e "${RED}❌ Failed to free port $BACKEND_PORT${NC}"
+            return 1
+        fi
+    fi
+
+    # Start backend
+    cd "$BACKEND_DIR"
+    echo "📍 Changed to: $(pwd)"
+    echo "🚀 Starting Node.js backend..."
+
+    nohup npm start > backend.log 2>&1 &
+    BACKEND_PID=$!
+    echo "✅ Backend started with PID: $BACKEND_PID"
+
+    # Wait and verify
+    sleep 5
+    if netstat -tlnp 2>/dev/null | grep -q ":$BACKEND_PORT "; then
+        echo -e "${GREEN}✅ Backend is running on port $BACKEND_PORT${NC}"
+        return 0
+    else
+        echo -e "${RED}❌ Backend failed to start${NC}"
+        return 1
+    fi
+}
+
+# Start Frontend Service
+start_frontend() {
+    echo -e "${CYAN}Starting Frontend Service...${NC}"
+
+    # Check if port is available
+    if ! check_port $FRONTEND_PORT; then
+        kill_port $FRONTEND_PORT
+        sleep 3
+        if ! check_port $FRONTEND_PORT; then
+            echo -e "${RED}❌ Failed to free port $FRONTEND_PORT${NC}"
+            return 1
+        fi
+    fi
+
+    # Start frontend
+    cd "$FRONTEND_DIR"
+    echo "📍 Changed to: $(pwd)"
+    echo "🚀 Starting Next.js frontend..."
+
+    nohup npm start > frontend.log 2>&1 &
+    FRONTEND_PID=$!
+    echo "✅ Frontend started with PID: $FRONTEND_PID"
+
+    # Wait and verify
+    sleep 8
+    if netstat -tlnp 2>/dev/null | grep -q ":$FRONTEND_PORT "; then
+        echo -e "${GREEN}✅ Frontend is running on port $FRONTEND_PORT${NC}"
+        return 0
+    else
+        echo -e "${RED}❌ Frontend failed to start${NC}"
+        return 1
+    fi
+}
+
+# Stop Backend Service
+stop_backend() {
+    echo -e "${CYAN}Stopping Backend Service...${NC}"
+
+    if netstat -tlnp 2>/dev/null | grep -q ":$BACKEND_PORT "; then
+        kill_port $BACKEND_PORT
+        echo -e "${GREEN}✅ Backend stopped${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Backend was not running${NC}"
+    fi
+}
+
+# Stop Frontend Service
+stop_frontend() {
+    echo -e "${CYAN}Stopping Frontend Service...${NC}"
+
+    if netstat -tlnp 2>/dev/null | grep -q ":$FRONTEND_PORT "; then
+        kill_port $FRONTEND_PORT
+        echo -e "${GREEN}✅ Frontend stopped${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Frontend was not running${NC}"
+    fi
+}
+
+# Restart Backend Service
+restart_backend() {
+    echo -e "${CYAN}Restarting Backend Service...${NC}"
+    stop_backend
+    sleep 2
+    start_backend
+}
+
+# Restart Frontend Service
+restart_frontend() {
+    echo -e "${CYAN}Restarting Frontend Service...${NC}"
+    stop_frontend
+    sleep 2
+    start_frontend
+}
+
+# ====================================================================================
+# FULL SYSTEM MANAGEMENT
+# ====================================================================================
+
+# Start all services
+start_all_services() {
+    echo -e "${CYAN}================================================================================${NC}"
+    echo -e "${CYAN}                      STARTING ALL LALON SHOP SERVICES${NC}"
+    echo -e "${CYAN}================================================================================${NC}"
+    echo "Starting at: $(date)"
+    echo ""
+
+    # Clean up existing processes
+    echo "1. 🧹 Cleaning up existing processes..."
+    kill_port $BACKEND_PORT
+    kill_port $FRONTEND_PORT
+    sleep 3
+
+    # Verify ports are free
+    if ! check_port $BACKEND_PORT; then
+        echo -e "${RED}❌ Failed to free port $BACKEND_PORT${NC}"
+        exit 1
+    fi
+
+    if ! check_port $FRONTEND_PORT; then
+        echo -e "${RED}❌ Failed to free port $FRONTEND_PORT${NC}"
+        exit 1
+    fi
+
+    # Start Backend
+    echo ""
+    echo "2. 🔧 Starting Backend Server..."
+    if start_backend; then
+        echo -e "${GREEN}✅ Backend startup successful${NC}"
+    else
+        echo -e "${RED}❌ Backend startup failed${NC}"
+        exit 1
+    fi
+
+    # Start Frontend
+    echo ""
+    echo "3. 🌐 Starting Frontend Server..."
+    if start_frontend; then
+        echo -e "${GREEN}✅ Frontend startup successful${NC}"
+    else
+        echo -e "${RED}❌ Frontend startup failed${NC}"
+        exit 1
+    fi
+
+    # Test services
+    echo ""
+    echo "4. 🧪 Testing Services..."
+    if curl -s --max-time 5 "http://localhost:$BACKEND_PORT/api/v1/product/search?take=1&page=1" | grep -q "products"; then
+        echo -e "${GREEN}✅ Backend API is responding${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Backend API test failed${NC}"
+    fi
+
+    # Final status
+    echo ""
+    echo -e "${CYAN}================================================================================${NC}"
+    echo -e "${GREEN}🎉 STARTUP COMPLETE!${NC}"
+    echo -e "${CYAN}================================================================================${NC}"
+    echo ""
+    echo -e "${WHITE}ACCESS URLs:${NC}"
+    echo -e "  🌐 ${GREEN}Domain Frontend:${NC} https://$DOMAIN/"
+    echo -e "  🔗 ${GREEN}Direct Frontend:${NC} http://$SERVER_IP:$FRONTEND_PORT/"
+    echo -e "  🔧 ${GREEN}Backend API:${NC} http://$SERVER_IP:$BACKEND_PORT/api/v1/"
+    echo -e "  👨‍💼 ${GREEN}Admin Panel:${NC} https://$ADMIN_DOMAIN/"
+    echo ""
+    echo -e "${WHITE}LOG FILES:${NC}"
+    echo -e "  📄 Backend: $BACKEND_DIR/backend.log"
+    echo -e "  📄 Frontend: $FRONTEND_DIR/frontend.log"
+    echo ""
+    echo -e "${WHITE}PROCESS IDs:${NC}"
+    echo -e "  🔧 Backend PID: $(pgrep -f "node.*server.js" | head -1)"
+    echo -e "  🌐 Frontend PID: $(pgrep -f "next-server" | head -1)"
+    echo ""
+}
+
+# Stop all services
+stop_all_services() {
+    echo -e "${CYAN}================================================================================${NC}"
+    echo -e "${CYAN}                       STOPPING ALL LALON SHOP SERVICES${NC}"
+    echo -e "${CYAN}================================================================================${NC}"
+    echo "Stopping at: $(date)"
+    echo ""
+
+    echo "🛑 Stopping Frontend Service..."
+    stop_frontend
+
+    echo ""
+    echo "🛑 Stopping Backend Service..."
+    stop_backend
+
+    echo ""
+    echo "🧹 Cleaning up any remaining processes..."
+    # Kill any remaining Node.js processes
+    pkill -f "node.*server.js" 2>/dev/null || true
+    pkill -f "next-server" 2>/dev/null || true
+    pkill -f "vite" 2>/dev/null || true
+
+    sleep 2
+    echo -e "${GREEN}✅ All services stopped successfully${NC}"
+    echo ""
+}
+
+# Restart all services
+restart_all_services() {
+    echo -e "${CYAN}================================================================================${NC}"
+    echo -e "${CYAN}                      RESTARTING ALL LALON SHOP SERVICES${NC}"
+    echo -e "${CYAN}================================================================================${NC}"
+    echo "Restarting at: $(date)"
+    echo ""
+
+    stop_all_services
+    sleep 3
+    start_all_services
+}
+
+# ====================================================================================
+# CONFIGURATION MANAGEMENT
+# ====================================================================================
+
+show_configuration() {
+    echo -e "${CYAN}================================================================================${NC}"
+    echo -e "${CYAN}                           SYSTEM CONFIGURATION${NC}"
+    echo -e "${CYAN}================================================================================${NC}"
+    echo ""
+
+    echo -e "${WHITE}📁 DIRECTORY STRUCTURE:${NC}"
+    echo -e "  Project Root: $PROJECT_ROOT"
+    echo -e "  ├── backend/           # Node.js API server"
+    echo -e "  ├── lalon-shop-frontend/ # Next.js shop frontend"
+    echo -e "  ├── admin-frontend/    # React admin panel"
+    echo -e "  └── banner/            # Static assets"
+    echo ""
+
+    echo -e "${WHITE}🔌 PORT CONFIGURATION:${NC}"
+    echo -e "  Backend API:     Port $BACKEND_PORT"
+    echo -e "  Frontend Shop:   Port $FRONTEND_PORT"
+    echo -e "  MongoDB:         Port 27017 (default)"
+    echo ""
+
+    echo -e "${WHITE}🌐 NETWORK CONFIGURATION:${NC}"
+    echo -e "  Server IP:       $SERVER_IP"
+    echo -e "  Main Domain:     https://$DOMAIN"
+    echo -e "  Admin Domain:    https://$ADMIN_DOMAIN"
+    echo ""
+
+    echo -e "${WHITE}🔒 SSL CERTIFICATES:${NC}"
+    echo -e "  Certificate Path: /etc/letsencrypt/live/$DOMAIN/"
+    echo -e "  ├── fullchain.pem  # SSL certificate chain"
+    echo -e "  └── privkey.pem    # Private key"
+    echo ""
+
+    echo -e "${WHITE}📄 BACKEND CONFIGURATION ($BACKEND_DIR/.env):${NC}"
+    if [ -f "$BACKEND_DIR/.env" ]; then
+        echo -e "  $(grep -E "^(PORT|WEB_URL|ADMIN_WEB_URL|BACKEND_URL|MONGODB_URI)" "$BACKEND_DIR/.env" | sed 's/^/  /')"
+    else
+        echo -e "  ${RED}❌ .env file not found${NC}"
+    fi
+    echo ""
+
+    echo -e "${WHITE}🌐 NGINX CONFIGURATION:${NC}"
+    echo -e "  Main Site: /etc/nginx/sites-enabled/$DOMAIN.conf"
+    echo -e "  Admin Site: /etc/nginx/sites-enabled/admin.$DOMAIN.conf"
+    echo ""
+
+    echo -e "${WHITE}🗄️  DATABASE:${NC}"
+    echo -e "  Type: MongoDB"
+    echo -e "  Connection: mongodb://127.0.0.1:27017/lalon_shop"
+    echo -e "  Status: $(systemctl is-active mongod 2>/dev/null || echo 'Check manually')"
+    echo ""
+}
+
+# ====================================================================================
+# DEPLOYMENT PROCEDURES - STEP BY STEP
+# ====================================================================================
+
+show_deployment_guide() {
+    echo -e "${CYAN}================================================================================${NC}"
+    echo -e "${CYAN}                        DEPLOYMENT PROCEDURES (DETAILED)${NC}"
+    echo -e "${CYAN}================================================================================${NC}"
+    echo ""
+
+    echo -e "${WHITE}🚀 PHASE 1: INITIAL SERVER SETUP${NC}"
+    echo ""
+    echo -e "${GREEN}Step 1: Install Required Software${NC}"
+    echo -e "   • Node.js 18+: curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && apt install nodejs"
+    echo -e "   • MongoDB: wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | apt-key add - && echo 'deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse' | tee /etc/apt/sources.list.d/mongodb-org-7.0.list && apt update && apt install mongodb-org"
+    echo -e "   • Nginx: apt install nginx"
+    echo -e "   • Git: apt install git"
+    echo ""
+    echo -e "${GREEN}Step 2: Clone & Setup Project${NC}"
+    echo -e "   cd /root"
+    echo -e "   git clone <your-repo-url> lalonbf"
+    echo -e "   cd lalonbf"
+    echo -e "   chmod +x lalon-shop-complete-guide.sh"
+    echo ""
+
+    echo -e "${WHITE}🔧 PHASE 2: COMPONENT-BY-COMPONENT DEPLOYMENT${NC}"
+    echo ""
+
+    echo -e "${YELLOW}2.1 Database Setup (MongoDB):${NC}"
+    echo -e "   systemctl start mongod"
+    echo -e "   systemctl enable mongod"
+    echo -e "   mongo --eval 'db.createUser({user:\"admin\",pwd:\"password\",roles:[{role:\"root\",db:\"admin\"}]})'"
+    echo -e "   # Connection string: mongodb://admin:password@localhost:27017/lalon_shop"
+    echo ""
+
+    echo -e "${YELLOW}2.2 Backend Deployment (Node.js API):${NC}"
+    echo -e "   cd $BACKEND_DIR"
+    echo -e "   npm install"
+    echo -e "   # Edit .env file:"
+    echo -e "   nano .env"
+    echo -e "   # Set: BACKEND_URL=https://www.lalonshopbd.com"
+    echo -e "   # Set: MONGODB_URI=mongodb://localhost:27017/lalon_shop"
+    echo -e "   # Set: PORT=2004"
+    echo -e "   npm start  # Test locally first"
+    echo ""
+
+    echo -e "${YELLOW}2.3 Frontend Shop Deployment (Next.js):${NC}"
+    echo -e "   cd $FRONTEND_DIR"
+    echo -e "   npm install"
+    echo -e "   # Edit .env.local:"
+    echo -e "   nano .env.local"
+    echo -e "   # Set: NEXT_PUBLIC_API_URL=https://www.lalonshopbd.com/api/v1"
+    echo -e "   npm run build  # Build for production"
+    echo -e "   npm start      # Start production server on port 2008"
+    echo ""
+
+    echo -e "${YELLOW}2.4 Admin Panel Deployment (React):${NC}"
+    echo -e "   cd $ADMIN_DIR"
+    echo -e "   npm install"
+    echo -e "   npm run build  # Creates dist/ folder"
+    echo -e "   # Nginx will serve static files from dist/"
+    echo ""
+
+    echo -e "${WHITE}🌐 PHASE 3: NGINX CONFIGURATION${NC}"
+    echo ""
+
+    echo -e "${GREEN}Step 1: Create Main Site Config${NC}"
+    echo -e "   nano /etc/nginx/sites-available/lalonshopbd.com.conf"
+    echo -e "   # Paste the following configuration:"
+    echo -e ""
+    echo -e "${BLUE}# Main HTTPS server for www domain${NC}"
+    echo -e "${BLUE}server {${NC}"
+    echo -e "${BLUE}    listen 443 ssl;${NC}"
+    echo -e "${BLUE}    server_name www.lalonshopbd.com;${NC}"
+    echo -e "${BLUE}    ssl_certificate /etc/letsencrypt/live/lalonshopbd.com/fullchain.pem;${NC}"
+    echo -e "${BLUE}    ssl_certificate_key /etc/letsencrypt/live/lalonshopbd.com/privkey.pem;${NC}"
+    echo -e "${BLUE}    # Frontend (Next.js)${NC}"
+    echo -e "${BLUE}    location / {${NC}"
+    echo -e "${BLUE}        proxy_pass http://localhost:2008;${NC}"
+    echo -e "${BLUE}        proxy_http_version 1.1;${NC}"
+    echo -e "${BLUE}        proxy_set_header Upgrade \$http_upgrade;${NC}"
+    echo -e "${BLUE}        proxy_set_header Connection 'upgrade';${NC}"
+    echo -e "${BLUE}        proxy_set_header Host \$host;${NC}"
+    echo -e "${BLUE}    }${NC}"
+    echo -e "${BLUE}    # Backend API${NC}"
+    echo -e "${BLUE}    location /api/ {${NC}"
+    echo -e "${BLUE}        proxy_pass http://localhost:2004;${NC}"
+    echo -e "${BLUE}        proxy_http_version 1.1;${NC}"
+    echo -e "${BLUE}        proxy_set_header Upgrade \$http_upgrade;${NC}"
+    echo -e "${BLUE}        proxy_set_header Connection 'upgrade';${NC}"
+    echo -e "${BLUE}        proxy_set_header Host \$host;${NC}"
+    echo -e "${BLUE}    }${NC}"
+    echo -e "${BLUE}}${NC}"
+    echo ""
+
+    echo -e "${GREEN}Step 2: Enable Site & SSL${NC}"
+    echo -e "   ln -s /etc/nginx/sites-available/lalonshopbd.com.conf /etc/nginx/sites-enabled/"
+    echo -e "   apt install certbot python3-certbot-nginx"
+    echo -e "   certbot --nginx -d www.lalonshopbd.com -d admin.lalonshopbd.com"
+    echo -e "   nginx -t && systemctl reload nginx"
+    echo ""
+
+    echo -e "${WHITE}🔄 PHASE 4: SERVICE MANAGEMENT${NC}"
+    echo ""
+
+    echo -e "${GREEN}Using the Management Script:${NC}"
+    echo -e "   cd $PROJECT_ROOT"
+    echo -e "   ./lalon-shop-complete-guide.sh start    # Start all services"
+    echo -e "   ./lalon-shop-complete-guide.sh status   # Check status"
+    echo -e "   ./lalon-shop-complete-guide.sh restart  # Restart all"
+    echo ""
+    echo -e "${GREEN}Manual Service Management:${NC}"
+    echo -e "   # Backend"
+    echo -e "   cd $BACKEND_DIR && npm start &"
+    echo -e "   # Frontend"
+    echo -e "   cd $FRONTEND_DIR && npm start &"
+    echo -e "   # Check ports"
+    echo -e "   netstat -tlnp | grep -E ':2004|:2008'"
+    echo ""
+
+    echo -e "${WHITE}📊 PHASE 5: VERIFICATION${NC}"
+    echo ""
+
+    echo -e "${GREEN}Test Each Component:${NC}"
+    echo -e "   • Backend API: curl http://localhost:2004/api/v1/product/search?take=1"
+    echo -e "   • Frontend: curl http://localhost:2008"
+    echo -e "   • Full Site: curl https://www.lalonshopbd.com"
+    echo -e "   • Admin: curl https://www.admin.lalonshopbd.com"
+    echo ""
+    echo -e "${GREEN}Browser Tests:${NC}"
+    echo -e "   • https://www.lalonshopbd.com (shop frontend)"
+    echo -e "   • https://www.admin.lalonshopbd.com (admin panel)"
+    echo -e "   • Check images load correctly"
+    echo -e "   • Test search and product pages"
+    echo ""
+
+    echo -e "${WHITE}🔄 PHASE 6: UPDATE/MAINTENANCE${NC}"
+    echo ""
+
+    echo -e "${GREEN}Code Updates:${NC}"
+    echo -e "   cd $PROJECT_ROOT"
+    echo -e "   git pull"
+    echo -e "   # Update each component:"
+    echo -e "   cd backend && npm install && npm update"
+    echo -e "   cd ../lalon-shop-frontend && npm install && npm run build"
+    echo -e "   cd ../admin-frontend && npm install && npm run build"
+    echo -e "   ./lalon-shop-complete-guide.sh restart"
+    echo ""
+
+    echo -e "${GREEN}SSL Certificate Renewal:${NC}"
+    echo -e "   certbot renew"
+    echo -e "   systemctl reload nginx"
+    echo ""
+
+    echo -e "${GREEN}Database Maintenance:${NC}"
+    echo -e "   # Backup:"
+    echo -e "   mongodump --db lalon_shop --out /backup/$(date +%Y%m%d)"
+    echo -e "   # Restore:"
+    echo -e "   mongorestore --db lalon_shop /backup/20241201/lalon_shop"
+    echo ""
+
+    echo -e "${WHITE}🚨 PHASE 7: EMERGENCY RECOVERY${NC}"
+    echo ""
+
+    echo -e "${RED}If Services Fail:${NC}"
+    echo -e "   ./lalon-shop-complete-guide.sh stop"
+    echo -e "   ./lalon-shop-complete-guide.sh kill-ports"
+    echo -e "   ./lalon-shop-complete-guide.sh start"
+    echo ""
+
+    echo -e "${RED}If Nginx Fails:${NC}"
+    echo -e "   nginx -t  # Test config"
+    echo -e "   systemctl status nginx"
+    echo -e "   systemctl restart nginx"
+    echo ""
+
+    echo -e "${RED}If Database Fails:${NC}"
+    echo -e "   systemctl status mongod"
+    echo -e "   systemctl restart mongod"
+    echo -e "   mongo --eval 'db.stats()'"
+    echo ""
+}
+
+# ====================================================================================
+# TROUBLESHOOTING GUIDE
+# ====================================================================================
+
+show_troubleshooting() {
+    echo -e "${CYAN}================================================================================${NC}"
+    echo -e "${CYAN}                           TROUBLESHOOTING GUIDE${NC}"
+    echo -e "${CYAN}================================================================================${NC}"
+    echo ""
+
+    echo -e "${WHITE}🔥 COMMON ISSUES & SOLUTIONS:${NC}"
+    echo ""
+
+    echo -e "${RED}❌ PORT ALREADY IN USE (EADDRINUSE):${NC}"
+    echo -e "  ${GREEN}Problem:${NC} Service fails to start because port is occupied"
+    echo -e "  ${GREEN}Solution:${NC}"
+    echo -e "    • Find process: netstat -tlnp | grep :PORT"
+    echo -e "    • Kill process: kill -9 PID"
+    echo -e "    • Or use: ./guide.sh kill-ports"
+    echo ""
+
+    echo -e "${RED}❌ DOMAIN NOT ACCESSIBLE:${NC}"
+    echo -e "  ${GREEN}Problem:${NC} https://domain.com returns error"
+    echo -e "  ${GREEN}Check:${NC}"
+    echo -e "    • Nginx status: systemctl status nginx"
+    echo -e "    • SSL certificates: ls /etc/letsencrypt/live/domain.com/"
+    echo -e "    • DNS configuration"
+    echo -e "    • Firewall: ufw status"
+    echo ""
+
+    echo -e "${RED}❌ IMAGES NOT LOADING:${NC}"
+    echo -e "  ${GREEN}Problem:${NC} Product images show as broken/default"
+    echo -e "  ${GREEN}Check:${NC}"
+    echo -e "    • BACKEND_URL in backend/.env (should be https://domain.com)"
+    echo -e "    • Image files exist: ls backend/media/"
+    echo -e "    • Media endpoint: curl https://domain.com/api/v1/media?name=test.jpg"
+    echo ""
+
+    echo -e "${RED}❌ API NOT RESPONDING:${NC}"
+    echo -e "  ${GREEN}Problem:${NC} Frontend can't load products/orders"
+    echo -e "  ${GREEN}Check:${NC}"
+    echo -e "    • Backend running: netstat -tlnp | grep :2004"
+    echo -e "    • MongoDB: systemctl status mongod"
+    echo -e "    • Logs: tail -f backend/backend.log"
+    echo ""
+
+    echo -e "${RED}❌ SSL CERTIFICATE ERRORS:${NC}"
+    echo -e "  ${GREEN}Problem:${NC} HTTPS shows certificate warnings"
+    echo -e "  ${GREEN}Solution:${NC}"
+    echo -e "    • Renew: certbot renew"
+    echo -e "    • Reconfigure: certbot --nginx"
+    echo -e "    • Check expiry: openssl x509 -in cert.pem -text | grep 'Not After'"
+    echo ""
+
+    echo -e "${WHITE}🔧 USEFUL COMMANDS:${NC}"
+    echo -e "  • ${GREEN}Check all services:${NC} ./guide.sh status"
+    echo -e "  • ${GREEN}View logs:${NC} tail -f backend/backend.log"
+    echo -e "  • ${GREEN}Check nginx:${NC} nginx -t && systemctl reload nginx"
+    echo -e "  • ${GREEN}Check MongoDB:${NC} mongo --eval 'db.stats()'"
+    echo -e "  • ${GREEN}Check ports:${NC} netstat -tlnp | grep -E ':(2004|2008)'"
+    echo ""
+
+    echo -e "${WHITE}📞 EMERGENCY CONTACTS:${NC}"
+    echo -e "  • Server Admin: [Your contact info]"
+    echo -e "  • Hosting Provider: [Provider support]"
+    echo -e "  • Domain Registrar: [DNS support]"
+    echo ""
+}
+
+# ====================================================================================
+# UTILITY FUNCTIONS
+# ====================================================================================
+
+# Kill all processes on our ports
+kill_all_ports() {
+    echo -e "${CYAN}Killing all processes on ports $BACKEND_PORT and $FRONTEND_PORT...${NC}"
+    kill_port $BACKEND_PORT
+    kill_port $FRONTEND_PORT
+    echo -e "${GREEN}✅ Port cleanup complete${NC}"
+}
+
+# Show logs
+show_logs() {
+    echo -e "${CYAN}================================================================================${NC}"
+    echo -e "${CYAN}                               SERVICE LOGS${NC}"
+    echo -e "${CYAN}================================================================================${NC}"
+    echo ""
+
+    echo -e "${WHITE}📄 BACKEND LOGS (last 20 lines):${NC}"
+    echo -e "${CYAN}--------------------------------------------------------------------------------${NC}"
+    if [ -f "$BACKEND_DIR/backend.log" ]; then
+        tail -20 "$BACKEND_DIR/backend.log"
+    else
+        echo -e "${RED}No backend log file found${NC}"
+    fi
+    echo ""
+
+    echo -e "${WHITE}📄 FRONTEND LOGS (last 20 lines):${NC}"
+    echo -e "${CYAN}--------------------------------------------------------------------------------${NC}"
+    if [ -f "$FRONTEND_DIR/frontend.log" ]; then
+        tail -20 "$FRONTEND_DIR/frontend.log"
+    else
+        echo -e "${RED}No frontend log file found${NC}"
+    fi
+    echo ""
+}
+
+# ====================================================================================
+# GENERAL README - COMPLETE SYSTEM OVERVIEW
+# ====================================================================================
+
+show_general_readme() {
+    echo -e "${CYAN}================================================================================${NC}"
+    echo -e "${CYAN}              📖 LALON SHOP BD - GENERAL README & SYSTEM OVERVIEW${NC}"
+    echo -e "${CYAN}================================================================================${NC}"
+    echo ""
+
+    echo -e "${WHITE}🎯 PROJECT OVERVIEW${NC}"
+    echo -e "${YELLOW}Lalon Shop BD${NC} is a complete e-commerce platform for traditional musical instruments,"
+    echo -e "specializing in Baul and folk instruments from Bangladesh. The system provides"
+    echo -e "a modern online shopping experience with admin management capabilities."
+    echo ""
+    echo -e "${GREEN}Key Features:${NC}"
+    echo -e "  • 🛍️  Customer shopping with product catalog"
+    echo -e "  • 🔍 Advanced search and filtering"
+    echo -e "  • 🖼️  Product image management"
+    echo -e "  • 👨‍💼 Admin dashboard for inventory management"
+    echo -e "  • 📱 Responsive design for all devices"
+    echo -e "  • 🔒 SSL encryption and secure payments"
+    echo ""
+
+    echo -e "${WHITE}🏗️  SYSTEM ARCHITECTURE${NC}"
+    echo ""
+    echo -e "${CYAN}FRONTEND LAYER (Customer-Facing)${NC}"
+    echo -e "  🌐 ${GREEN}Shop Frontend${NC} (Next.js) - Port 2008"
+    echo -e "     ├── Technology: Next.js 15.1.3, React 19, Tailwind CSS"
+    echo -e "     ├── Purpose: Customer shopping interface"
+    echo -e "     ├── URL: https://www.lalonshopbd.com"
+    echo -e "     └── Features: Product browsing, search, cart, checkout"
+    echo ""
+    echo -e "${CYAN}ADMIN LAYER (Management)${NC}"
+    echo -e "  👨‍💼 ${GREEN}Admin Panel${NC} (React) - Static Files"
+    echo -e "     ├── Technology: React, Vite, Tailwind CSS"
+    echo -e "     ├── Purpose: Product and order management"
+    echo -e "     ├── URL: https://www.admin.lalonshopbd.com"
+    echo -e "     └── Features: Add/edit products, manage orders, analytics"
+    echo ""
+    echo -e "${CYAN}BACKEND LAYER (API & Logic)${NC}"
+    echo -e "  🔧 ${GREEN}API Server${NC} (Node.js) - Port 2004"
+    echo -e "     ├── Technology: Node.js, Express.js, MongoDB"
+    echo -e "     ├── Purpose: Business logic and data management"
+    echo -e "     ├── API: https://www.lalonshopbd.com/api/v1/"
+    echo -e "     └── Features: Product CRUD, order processing, file uploads"
+    echo ""
+    echo -e "${CYAN}DATABASE LAYER${NC}"
+    echo -e "  🗄️  ${GREEN}MongoDB${NC} - Port 27017"
+    echo -e "     ├── Purpose: Data persistence"
+    echo -e "     ├── Database: lalon_shop"
+    echo -e "     └── Collections: products, categories, orders, users"
+    echo ""
+    echo -e "${CYAN}INFRASTRUCTURE LAYER${NC}"
+    echo -e "  🌐 ${GREEN}Nginx Proxy${NC} - Ports 80/443"
+    echo -e "     ├── Purpose: Load balancing, SSL termination"
+    echo -e "     ├── SSL: Let's Encrypt certificates"
+    echo -e "     └── Routing: Domain-based traffic distribution"
+    echo ""
+
+    echo -e "${WHITE}📦 DEPLOYMENT GUIDE${NC}"
+    echo ""
+
+    echo -e "${YELLOW}PHASE 1: SERVER PREPARATION${NC}"
+    echo -e "  1. ${GREEN}Install Required Software${NC}"
+    echo -e "     sudo apt update"
+    echo -e "     sudo apt install nodejs npm mongodb nginx git curl"
+    echo ""
+    echo -e "  2. ${GREEN}Setup MongoDB${NC}"
+    echo -e "     sudo systemctl start mongod"
+    echo -e "     sudo systemctl enable mongod"
+    echo -e "     mongo --eval 'use lalon_shop'"
+    echo ""
+    echo -e "  3. ${GREEN}Clone Repository${NC}"
+    echo -e "     cd /root"
+    echo -e "     git clone <your-repo-url> lalonbf"
+    echo -e "     cd lalonbf"
+    echo ""
+
+    echo -e "${YELLOW}PHASE 2: BACKEND DEPLOYMENT${NC}"
+    echo -e "  1. ${GREEN}Navigate & Install${NC}"
+    echo -e "     cd backend"
+    echo -e "     npm install"
+    echo ""
+    echo -e "  2. ${GREEN}Configure Environment${NC}"
+    echo -e "     nano .env"
+    echo -e "     # Add these lines:"
+    echo -e "     PORT=2004"
+    echo -e "     MONGODB_URI=mongodb://localhost:27017/lalon_shop"
+    echo -e "     BACKEND_URL=https://www.lalonshopbd.com"
+    echo -e "     WEB_URL=https://www.lalonshopbd.com"
+    echo -e "     ADMIN_WEB_URL=https://www.admin.lalonshopbd.com"
+    echo ""
+    echo -e "  3. ${GREEN}Test Backend${NC}"
+    echo -e "     npm start"
+    echo -e "     # Should start on http://localhost:2004"
+    echo ""
+
+    echo -e "${YELLOW}PHASE 3: FRONTEND DEPLOYMENT${NC}"
+    echo -e "  1. ${GREEN}Deploy Shop Frontend${NC}"
+    echo -e "     cd ../lalon-shop-frontend"
+    echo -e "     npm install"
+    echo -e "     npm run build  # Build for production"
+    echo -e "     nano .env.local"
+    echo -e "     # Add: NEXT_PUBLIC_API_URL=https://www.lalonshopbd.com/api/v1"
+    echo ""
+    echo -e "  2. ${GREEN}Deploy Admin Panel${NC}"
+    echo -e "     cd ../admin-frontend"
+    echo -e "     npm install"
+    echo -e "     npm run build  # Creates dist/ folder"
+    echo ""
+
+    echo -e "${YELLOW}PHASE 4: NGINX CONFIGURATION${NC}"
+    echo -e "  1. ${GREEN}Create Site Configuration${NC}"
+    echo -e "     sudo nano /etc/nginx/sites-available/lalonshopbd.com"
+    echo -e "     # Copy the configuration block from deploy guide"
+    echo ""
+    echo -e "  2. ${GREEN}Enable Site${NC}"
+    echo -e "     sudo ln -s /etc/nginx/sites-available/lalonshopbd.com /etc/nginx/sites-enabled/"
+    echo ""
+    echo -e "  3. ${GREEN}SSL Certificate${NC}"
+    echo -e "     sudo apt install certbot python3-certbot-nginx"
+    echo -e "     sudo certbot --nginx -d www.lalonshopbd.com -d www.admin.lalonshopbd.com"
+    echo ""
+
+    echo -e "${YELLOW}PHASE 5: SERVICE MANAGEMENT${NC}"
+    echo -e "  1. ${GREEN}Using Management Script${NC}"
+    echo -e "     cd /root/lalonbf"
+    echo -e "     chmod +x lalon-shop-complete-guide.sh"
+    echo -e "     ./lalon-shop-complete-guide.sh start"
+    echo ""
+    echo -e "  2. ${GREEN}Verify Deployment${NC}"
+    echo -e "     ./lalon-shop-complete-guide.sh status"
+    echo ""
+
+    echo -e "${WHITE}👀 MONITORING & MAINTENANCE${NC}"
+    echo ""
+
+    echo -e "${YELLOW}DAILY MONITORING${NC}"
+    echo -e "  • ${GREEN}Check Service Status${NC}: ./lalon-shop-complete-guide.sh status"
+    echo -e "  • ${GREEN}Monitor Logs${NC}: ./lalon-shop-complete-guide.sh logs"
+    echo -e "  • ${GREEN}Check Disk Space${NC}: df -h"
+    echo -e "  • ${GREEN}Check Memory${NC}: free -h"
+    echo ""
+    echo -e "${YELLOW}AUTOMATIC RESTARTS (Daemons)${NC}"
+    echo -e "  The system uses background processes, not traditional daemons."
+    echo -e "  Services restart automatically if they crash, but for maintenance:"
+    echo -e "  • Use the management script for controlled restarts"
+    echo -e "  • Monitor with: ps aux | grep -E '(node|next)'"
+    echo ""
+    echo -e "${YELLOW}HEALTH CHECKS${NC}"
+    echo -e "  • Frontend: curl -s https://www.lalonshopbd.com | head -5"
+    echo -e "  • Backend: curl -s http://localhost:2004/api/v1/product/search?take=1"
+    echo -e "  • Database: mongo --eval 'db.stats()'"
+    echo ""
+
+    echo -e "${WHITE}🔄 RESTART PROCEDURES${NC}"
+    echo ""
+
+    echo -e "${YELLOW}QUICK RESTART (Recommended)${NC}"
+    echo -e "  cd /root/lalonbf"
+    echo -e "  ./lalon-shop-complete-guide.sh restart"
+    echo ""
+    echo -e "${YELLOW}INDIVIDUAL SERVICE RESTART${NC}"
+    echo -e "  ./lalon-shop-complete-guide.sh restart-backend"
+    echo -e "  ./lalon-shop-complete-guide.sh restart-frontend"
+    echo ""
+    echo -e "${YELLOW}EMERGENCY RESTART${NC}"
+    echo -e "  ./lalon-shop-complete-guide.sh kill-ports"
+    echo -e "  ./lalon-shop-complete-guide.sh start"
+    echo ""
+
+    echo -e "${WHITE}🚨 TROUBLESHOOTING${NC}"
+    echo ""
+
+    echo -e "${RED}Common Issues & Solutions:${NC}"
+    echo -e "  • ${YELLOW}Port Conflicts${NC}: ./lalon-shop-complete-guide.sh kill-ports"
+    echo -e "  • ${YELLOW}SSL Issues${NC}: certbot renew && systemctl reload nginx"
+    echo -e "  • ${YELLOW}Database Issues${NC}: systemctl restart mongod"
+    echo -e "  • ${YELLOW}Out of Memory${NC}: Check with 'free -h', restart services"
+    echo ""
+    echo -e "  ${GREEN}For detailed troubleshooting:${NC} ./lalon-shop-complete-guide.sh troubleshoot"
+    echo ""
+
+    echo -e "${WHITE}📊 SYSTEM WORKFLOW${NC}"
+    echo ""
+    echo -e "${CYAN}HOW THE SYSTEM WORKS:${NC}"
+    echo ""
+    echo -e "  1. ${GREEN}USER VISITS${NC} https://www.lalonshopbd.com"
+    echo -e "     └── Nginx receives HTTPS request (SSL termination)"
+    echo ""
+    echo -e "  2. ${GREEN}ROUTING DECISION${NC}"
+    echo -e "     ├── Shop pages → Proxy to Next.js (port 2008)"
+    echo -e "     └── API calls → Proxy to Express.js (port 2004)"
+    echo ""
+    echo -e "  3. ${GREEN}FRONTEND PROCESSING${NC}"
+    echo -e "     ├── Next.js renders React components"
+    echo -e "     ├── RTK Query fetches data from API"
+    echo -e "     └── getMedia() generates image URLs"
+    echo ""
+    echo -e "  4. ${GREEN}BACKEND PROCESSING${NC}"
+    echo -e "     ├── Express.js receives API requests"
+    echo -e "     ├── MongoDB aggregation pipelines execute"
+    echo -e "     ├── File uploads handled by middleware"
+    echo -e "     └── JSON responses returned with image URLs"
+    echo ""
+    echo -e "  5. ${GREEN}DATABASE OPERATIONS${NC}"
+    echo -e "     ├── Products stored with media arrays"
+    echo -e "     ├── Categories support hierarchical structure"
+    echo -e "     ├── Orders track customer purchases"
+    echo -e "     └── Search indexes optimize queries"
+    echo ""
+
+    echo -e "${WHITE}📁 FILE STRUCTURE${NC}"
+    echo ""
+    echo -e "${YELLOW}Project Root: /root/lalonbf/${NC}"
+    echo -e "├── backend/                    # Node.js API server"
+    echo -e "│   ├── controller/            # Business logic"
+    echo -e "│   ├── model/                 # MongoDB schemas"
+    echo -e "│   ├── router/                # API routes"
+    echo -e "│   ├── media/                 # Uploaded files"
+    echo -e "│   └── .env                   # Environment config"
+    echo -e "├── lalon-shop-frontend/       # Next.js shop"
+    echo -e "│   ├── src/app/               # App router pages"
+    echo -e "│   ├── src/components/        # React components"
+    echo -e "│   ├── src/redux/             # State management"
+    echo -e "│   └── .next/                 # Build output"
+    echo -e "├── admin-frontend/            # React admin panel"
+    echo -e "│   ├── src/                   # Source code"
+    echo -e "│   └── dist/                  # Build output"
+    echo -e "└── lalon-shop-complete-guide.sh # Management script"
+    echo ""
+
+    echo -e "${WHITE}🔧 DEVELOPMENT WORKFLOW${NC}"
+    echo ""
+    echo -e "${GREEN}Local Development:${NC}"
+    echo -e "  • Frontend: cd lalon-shop-frontend && npm run dev"
+    echo -e "  • Backend: cd backend && npm start"
+    echo -e "  • Access: http://localhost:3000 (frontend)"
+    echo ""
+    echo -e "${GREEN}Production Deployment:${NC}"
+    echo -e "  • Build: npm run build in each frontend"
+    echo -e "  • Start: npm start (uses production builds)"
+    echo -e "  • Access: https://domain.com (via Nginx)"
+    echo ""
+
+    echo -e "${WHITE}📞 SUPPORT & MAINTENANCE${NC}"
+    echo ""
+    echo -e "${GREEN}Daily Checks:${NC}"
+    echo -e "  • Monitor service status"
+    echo -e "  • Check disk space and memory"
+    echo -e "  • Review error logs"
+    echo ""
+    echo -e "${GREEN}Weekly Tasks:${NC}"
+    echo -e "  • SSL certificate renewal check"
+    echo -e "  • Database backup verification"
+    echo -e "  • Security updates"
+    echo ""
+    echo -e "${GREEN}Emergency Contacts:${NC}"
+    echo -e "  • System Admin: [Your contact info]"
+    echo -e "  • Hosting Provider: [Provider support]"
+    echo ""
+    echo -e "${CYAN}For detailed guides, use:${NC}"
+    echo -e "  ./lalon-shop-complete-guide.sh how-it-works    # Source code details"
+    echo -e "  ./lalon-shop-complete-guide.sh deploy         # Deployment procedures"
+    echo -e "  ./lalon-shop-complete-guide.sh troubleshoot   # Problem solving"
+    echo ""
+}
+
+# ====================================================================================
+# QUICK RESTART GUIDE - HOW TO RESTART EVERYTHING
+# ====================================================================================
+
+show_quick_restart() {
+    echo -e "${CYAN}================================================================================${NC}"
+    echo -e "${CYAN}                   🚀 QUICK RESTART GUIDE - HOW TO RESTART EVERYTHING${NC}"
+    echo -e "${CYAN}================================================================================${NC}"
+    echo ""
+    echo -e "${WHITE}🎯 IF YOUR SYSTEM IS DOWN - FOLLOW THESE STEPS:${NC}"
+    echo ""
+
+    echo -e "${YELLOW}Step 1: Navigate to Project Directory${NC}"
+    echo -e "   cd /root/lalon/lalonbf"
+    echo ""
+
+    echo -e "${YELLOW}Step 2: Kill Any Stuck Processes (if needed)${NC}"
+    echo -e "   ./lalon-shop-complete-guide.sh kill-ports"
+    echo -e "   # OR manually: pkill -f 'next-server' && pkill -f 'node server.js'"
+    echo ""
+
+    echo -e "${YELLOW}Step 3: Start All Services${NC}"
+    echo -e "   ./lalon-shop-complete-guide.sh start"
+    echo -e "   # This will:"
+    echo -e "   #   1. Stop any existing services"
+    echo -e "   #   2. Clear port conflicts"
+    echo -e "   #   3. Start Backend (Node.js) on port 2004"
+    echo -e "   #   4. Start Frontend (Next.js) on port 2008"
+    echo -e "   #   5. Test API connectivity"
+    echo ""
+
+    echo -e "${YELLOW}Step 4: Verify Everything Works${NC}"
+    echo -e "   ./lalon-shop-complete-guide.sh status"
+    echo -e "   # Should show:"
+    echo -e "   #   ✅ Backend: RUNNING on port 2004"
+    echo -e "   #   ✅ Frontend: RUNNING on port 2008"
+    echo -e "   #   ✅ Domain: ACCESSIBLE"
+    echo ""
+
+    echo -e "${WHITE}🌐 ACCESS YOUR SHOP:${NC}"
+    echo -e "   Shop:   https://www.lalonshopbd.com"
+    echo -e "   Admin:  https://www.admin.lalonshopbd.com"
+    echo -e "   Direct: http://88.222.245.41:2008"
+    echo ""
+
+    echo -e "${WHITE}🔧 MANUAL RESTART IF SCRIPT FAILS:${NC}"
+    echo ""
+    echo -e "${GREEN}Restart Backend:${NC}"
+    echo -e "   cd backend && npm start &"
+    echo ""
+    echo -e "${GREEN}Restart Frontend:${NC}"
+    echo -e "   cd lalon-shop-frontend && npm start &"
+    echo ""
+    echo -e "${GREEN}Check Ports:${NC}"
+    echo -e "   netstat -tlnp | grep -E ':2004|:2008'"
+    echo ""
+
+    echo -e "${WHITE}🚨 EMERGENCY FIXES:${NC}"
+    echo ""
+    echo -e "${RED}If Port Conflicts:${NC}"
+    echo -e "   netstat -tlnp | grep :2008  # Find PID"
+    echo -e "   kill -9 <PID>"
+    echo ""
+    echo -e "${RED}If Nginx Issues:${NC}"
+    echo -e "   nginx -t && systemctl reload nginx"
+    echo ""
+    echo -e "${RED}If Database Issues:${NC}"
+    echo -e "   systemctl restart mongod"
+    echo ""
+
+    echo -e "${WHITE}📞 QUICK STATUS CHECK:${NC}"
+    echo -e "   curl -s https://www.lalonshopbd.com | head -5"
+    echo -e "   curl -s http://localhost:2004/api/v1/product/search?take=1 | grep products"
+    echo ""
+}
+
+# ====================================================================================
+# MAIN MENU SYSTEM
+# ====================================================================================
+
+show_menu() {
+    echo -e "${CYAN}================================================================================${NC}"
+    echo -e "${CYAN}              LALON SHOP BD - COMPLETE MANAGEMENT SYSTEM${NC}"
+    echo -e "${CYAN}================================================================================${NC}"
+    echo ""
+    echo -e "${WHITE}🚀 QUICK ACTIONS:${NC}"
+    echo -e "  ${GREEN}restart${NC}      - Restart everything (most common command)"
+    echo -e "  ${GREEN}status${NC}       - Check status of all services"
+    echo -e "  ${GREEN}quick-restart${NC} - Show quick restart guide"
+    echo ""
+    echo -e "${WHITE}SYSTEM OVERVIEW:${NC}"
+    echo -e "  ${GREEN}readme${NC}       - General README & complete system overview"
+    echo -e "  ${GREEN}overview${NC}     - Show system architecture and components"
+    echo -e "  ${GREEN}how-it-works${NC} - Explain how the system operates (detailed)"
+    echo -e "  ${GREEN}config${NC}       - Show current configuration"
+    echo ""
+    echo -e "${WHITE}SERVICE MANAGEMENT:${NC}"
+    echo -e "  ${GREEN}start${NC}        - Start all services"
+    echo -e "  ${GREEN}stop${NC}         - Stop all services"
+    echo ""
+    echo -e "${WHITE}INDIVIDUAL SERVICES:${NC}"
+    echo -e "  ${GREEN}start-backend${NC}    - Start only backend service"
+    echo -e "  ${GREEN}start-frontend${NC}   - Start only frontend service"
+    echo -e "  ${GREEN}stop-backend${NC}     - Stop only backend service"
+    echo -e "  ${GREEN}stop-frontend${NC}    - Stop only frontend service"
+    echo -e "  ${GREEN}restart-backend${NC}  - Restart only backend service"
+    echo -e "  ${GREEN}restart-frontend${NC} - Restart only frontend service"
+    echo ""
+    echo -e "${WHITE}UTILITIES:${NC}"
+    echo -e "  ${GREEN}logs${NC}         - Show recent service logs"
+    echo -e "  ${GREEN}kill-ports${NC}   - Kill all processes on service ports"
+    echo -e "  ${GREEN}deploy${NC}       - Show deployment procedures"
+    echo -e "  ${GREEN}troubleshoot${NC} - Show troubleshooting guide"
+    echo -e "  ${GREEN}help${NC}         - Show this menu"
+    echo ""
+    echo -e "${YELLOW}Usage: ./lalon-shop-complete-guide.sh [command]${NC}"
+    echo ""
+}
+
+# ====================================================================================
+# MAIN SCRIPT LOGIC
+# ====================================================================================
+
+# Check if we're in the right directory
+if [ ! -d "$PROJECT_ROOT" ]; then
+    echo -e "${RED}❌ Error: Project directory $PROJECT_ROOT not found!${NC}"
+    echo -e "${YELLOW}Please run this script from the correct directory or update PROJECT_ROOT${NC}"
+    exit 1
+fi
+
+# Main command processing
+case "${1:-help}" in
+    "readme")
+        show_general_readme
+        ;;
+    "overview")
+        show_overview
+        ;;
+    "how-it-works")
+        show_how_it_works
+        ;;
+    "quick-restart")
+        show_quick_restart
+        ;;
+    "status")
+        check_service_status
+        ;;
+    "config")
+        show_configuration
+        ;;
+    "start")
+        start_all_services
+        ;;
+    "stop")
+        stop_all_services
+        ;;
+    "restart")
+        restart_all_services
+        ;;
+    "start-backend")
+        start_backend
+        ;;
+    "start-frontend")
+        start_frontend
+        ;;
+    "stop-backend")
+        stop_backend
+        ;;
+    "stop-frontend")
+        stop_frontend
+        ;;
+    "restart-backend")
+        restart_backend
+        ;;
+    "restart-frontend")
+        restart_frontend
+        ;;
+    "logs")
+        show_logs
+        ;;
+    "kill-ports")
+        kill_all_ports
+        ;;
+    "deploy")
+        show_deployment_guide
+        ;;
+    "troubleshoot")
+        show_troubleshooting
+        ;;
+    "help"|*)
+        show_menu
+        ;;
+esac
+
+echo -e "${CYAN}================================================================================${NC}"
+echo -e "${GREEN}Lalon Shop BD Management System - Command completed${NC}"
+echo -e "${CYAN}================================================================================${NC}"
