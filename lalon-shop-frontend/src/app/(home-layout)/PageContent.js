@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import banner from "../../../public/Untitled design (20).png";
+import musicalInstrumentsBanner from "../../../public/1736620941907_46_WhatsApp Image 2025-01-12 at 00.09.47_8031aeb4.jpg";
+import womensFashionBanner from "../../../public/1735304228683_617_WhatsApp Image 2024-12-20 at 16.32.07_9190be72.jpg";
 import Image from "next/image";
 import ProductCard from "@/components/ProductCard/ProductCard";
 import { useSearchProductQuery } from "@/redux/api/query";
@@ -26,6 +28,19 @@ const PageContent = () => {
     }&category=${searchParams.get("category") || ""}`
   );
 
+  // Function to get the appropriate banner based on category
+  const getCategoryBanner = () => {
+    const categoryName = searchParams.get("categoryName");
+    if (categoryName === "Musical Instruments") {
+      return musicalInstrumentsBanner;
+    } else if (categoryName === "Women's Fashion") {
+      return womensFashionBanner;
+    }
+    return null;
+  };
+
+  const categoryBanner = getCategoryBanner();
+
   return (
     <div className="">
       {!(searchParams.get("search") || searchParams.get("categoryName")) && (
@@ -39,13 +54,24 @@ const PageContent = () => {
         />
       )}
 
-      {(searchParams.get("search") || searchParams.get("categoryName")) && (
+      {categoryBanner && (
+        <Image
+          height={600}
+          width={1920}
+          priority={true}
+          className="w-full  min-h-[220px] object-cover"
+          src={categoryBanner}
+          alt={`${searchParams.get("categoryName")} banner`}
+        />
+      )}
+
+      {searchParams.get("search") && !categoryBanner && (
         <div className="pb-7">
           {!(isLoading || isFetching) && (
             <div className="bg-main py-6 md:py-14 text-center">
               <h1 className="text-xl md:text-4xl mb font-medium text-white">
                 {`Found ${searchData?.totalCount} results for "${
-                  searchParams.get("search") || searchParams.get("categoryName")
+                  searchParams.get("search")
                 }"`}
               </h1>
             </div>
